@@ -9,6 +9,7 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 
 /**
@@ -29,19 +30,28 @@ public class TwitchIrcBot extends PircBot {
     @Value("${twitch.irc.password}")
     private String password;
 
+    @Value("${twitch.bot.name}")
+    private String botName;
+
+    @Value("${twitch.bot.max.idle.periods}")
+    private Integer maxIdlePeriods;
+
     private String channel;
 
+    private Integer messageCounter = 0;
 
-    public TwitchIrcBot(
-            @Value("${twitch.bot.name}") String botName
-    ) {
-        setVerbose(true);
+    private Integer idleCounter = 0;
+
+    @PostConstruct
+    public void init() {
+        setVerbose(false);
         setName(botName);
     }
 
     @Override
     protected void onMessage(String channel, String sender, String login, String hostname, String message) {
-        super.onMessage(channel, sender, login, hostname, message);
+        /*super.onMessage(channel, sender, login, hostname, message);*/
+        messageCounter++;
         if ("ping".equalsIgnoreCase(message)) {
             sendMessage(channel, "PONG");
         }
@@ -54,6 +64,7 @@ public class TwitchIrcBot extends PircBot {
         }
         try {
             this.connect(ircHost, ircPort, password);
+            this.joinChannel("#" + channel);
         } catch (IOException | IrcException e) {
             logger.error("Unable to connect to Twitch IRC", e);
         }
@@ -65,5 +76,26 @@ public class TwitchIrcBot extends PircBot {
 
     public void setChannel(String channel) {
         this.channel = channel;
+    }
+
+    private void setMessageCounter(Integer messageCounter) {
+        this.messageCounter = messageCounter;
+    }
+
+    public Integer resetCounter() {
+
+        int messages = messageCounter;
+
+        if (messageCounter == 0) {
+            idleCounter++;
+            logger.info(String.format("%s channel is idle %d", channel, idleCounter));
+        }
+
+        if (idleCounter >= maxIdlePeriods) {
+            this.disconnect();
+        }
+
+        setMessageCounter(0);
+        return messages;
     }
 }

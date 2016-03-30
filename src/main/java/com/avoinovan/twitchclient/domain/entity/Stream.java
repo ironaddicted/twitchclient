@@ -7,18 +7,18 @@ import java.util.Date;
  */
 public class Stream extends AbstractEntity {
 
-    private String channelId;
+    private String channel;
 
     private Date startedOn;
 
     private Date endedOn;
 
-    public String getChannelId() {
-        return channelId;
+    public String getChannel() {
+        return channel;
     }
 
-    public void setChannelId(String channelId) {
-        this.channelId = channelId;
+    public void setChannel(String channel) {
+        this.channel = channel;
     }
 
     public Date getStartedOn() {
