@@ -1,9 +1,14 @@
 package com.avoinovan.twitchclient.irc;
 
+import com.avoinovan.twitchclient.api.TwitchApiClient;
+import com.avoinovan.twitchclient.api.model.RestStream;
+import com.avoinovan.twitchclient.api.model.response.SingleStreamSearchResult;
+import com.avoinovan.twitchclient.domain.entity.StreamSplit;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.jibble.pircbot.IrcException;
 import org.jibble.pircbot.PircBot;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -11,6 +16,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
+import java.util.Date;
 
 /**
  * Created by Alex on 3/1/16.
@@ -42,6 +48,11 @@ public class TwitchIrcBot extends PircBot {
 
     private Integer idleCounter = 0;
 
+    private Date splitStart = new Date();
+
+    @Autowired
+    private TwitchApiClient twitchApiClient;
+
     @PostConstruct
     public void init() {
         setVerbose(false);
@@ -60,7 +71,7 @@ public class TwitchIrcBot extends PircBot {
 
     public void connect() {
         if (channel == null) {
-            logger.error("Channel is not set");
+            logger.error("RestChannel is not set");
         }
         try {
             this.connect(ircHost, ircPort, password);
@@ -82,20 +93,34 @@ public class TwitchIrcBot extends PircBot {
         this.messageCounter = messageCounter;
     }
 
-    public Integer resetCounter() {
+    public void setSplitStart(Date splitStart) {
+        this.splitStart = splitStart;
+    }
 
-        int messages = messageCounter;
+    public StreamSplit resetCounter() {
 
-        if (messageCounter == 0) {
+        RestStream stream = twitchApiClient.getStreamByChannel(channel);
+
+/*        if (messageCounter == 0) {
             idleCounter++;
-            logger.info(String.format("%s channel is idle %d", channel, idleCounter));
         }
 
         if (idleCounter >= maxIdlePeriods) {
             this.disconnect();
+        }*/
+
+        StreamSplit result =  new StreamSplit(messageCounter, null, splitStart);
+
+        if (stream != null) {
+            result.setViewers(stream.getViewers());
+        } else {
+            logger.info(String.format("%s channel is dead", channel));
+            this.disconnect();
+            return result;
         }
 
         setMessageCounter(0);
-        return messages;
+        setSplitStart(new Date());
+        return result;
     }
 }

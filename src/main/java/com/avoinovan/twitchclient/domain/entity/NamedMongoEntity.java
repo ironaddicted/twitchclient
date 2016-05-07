@@ -3,7 +3,7 @@ package com.avoinovan.twitchclient.domain.entity;
 /**
  * Created by Alex on 3/1/16.
  */
-public class NamedEntity extends AbstractEntity {
+public class NamedMongoEntity extends AbstractMongoEntity {
 
     private String name;
 
@@ -18,9 +18,9 @@ public class NamedEntity extends AbstractEntity {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof NamedEntity)) return false;
+        if (!(o instanceof NamedMongoEntity)) return false;
 
-        NamedEntity that = (NamedEntity) o;
+        NamedMongoEntity that = (NamedMongoEntity) o;
 
         return name != null ? name.equals(that.name) : that.name == null;
 
